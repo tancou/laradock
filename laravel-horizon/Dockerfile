@@ -90,17 +90,18 @@ RUN if [ ${INSTALL_GD} = true ]; then \
 
 #Install ImageMagick package:
 ARG INSTALL_IMAGEMAGICK=false
-ARG IMAGEMAGICK_VERSION=latest
-ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
+ARG IMAGICK_VERSION=latest
+ENV IMAGICK_VERSION ${IMAGICK_VERSION}
 RUN set -eux; \
   if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
     apk add --update --no-cache imagemagick-dev imagemagick; \
+    convert --version | grep -q "ImageMagick 7."; \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       cd /tmp && \
-      if [ ${IMAGEMAGICK_VERSION} = "latest" ]; then \
+      if [ ${IMAGICK_VERSION} = "latest" ]; then \
         git clone https://github.com/Imagick/imagick; \
       else \
-        git clone --branch ${IMAGEMAGICK_VERSION} https://github.com/Imagick/imagick; \
+        git clone --branch ${IMAGICK_VERSION} https://github.com/Imagick/imagick; \
       fi && \
       cd imagick && \
       phpize && \

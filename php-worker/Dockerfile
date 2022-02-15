@@ -96,29 +96,30 @@ RUN if [ ${INSTALL_GD} = true ]; then \
 
 #Install ImageMagick:
 ARG INSTALL_IMAGEMAGICK=false
-ARG IMAGEMAGICK_VERSION=latest
-ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
+ARG IMAGICK_VERSION=latest
+ENV IMAGICK_VERSION ${IMAGICK_VERSION}
 RUN set -eux; \
   if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
-  apk add --update --no-cache imagemagick-dev imagemagick; \
-  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-  cd /tmp && \
-  if [ ${IMAGEMAGICK_VERSION} = "latest" ]; then \
-  git clone https://github.com/Imagick/imagick; \
-  else \
-  git clone --branch ${IMAGEMAGICK_VERSION} https://github.com/Imagick/imagick; \
-  fi && \
-  cd imagick && \
-  phpize && \
-  ./configure && \
-  make && \
-  make install && \
-  rm -r /tmp/imagick; \
-  else \
-  pecl install imagick; \
-  fi && \
-  docker-php-ext-enable imagick; \
-  php -m | grep -q 'imagick'; \
+    apk add --update --no-cache imagemagick-dev imagemagick; \
+    convert --version | grep -q "ImageMagick 7."; \
+    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+      cd /tmp && \
+      if [ ${IMAGICK_VERSION} = "latest" ]; then \
+        git clone https://github.com/Imagick/imagick; \
+      else \
+        git clone --branch ${IMAGICK_VERSION} https://github.com/Imagick/imagick; \
+      fi && \
+      cd imagick && \
+      phpize && \
+      ./configure && \
+      make && \
+      make install && \
+      rm -r /tmp/imagick; \
+    else \
+      pecl install imagick; \
+    fi && \
+    docker-php-ext-enable imagick; \
+    php -m | grep -q 'imagick'; \
   fi
 
 #Install GMP package:

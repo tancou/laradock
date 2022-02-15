@@ -1209,16 +1209,50 @@ USER root
 ARG INSTALL_IMAGEMAGICK=false
 ARG IMAGEMAGICK_VERSION=latest
 ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
+ARG IMAGICK_VERSION=latest
+ENV IMAGICK_VERSION ${IMAGICK_VERSION}
 
 RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
-    apt-get install -y libmagickwand-dev imagemagick && \
+    # We extract the first character to define the major version
+    IMAGICK_VERSION_PRIMARY_VERSION=`echo $IMAGEMAGICK_VERSION | cut -c1-1`; \
+    if [ ${IMAGEMAGICK_VERSION} = "latest" ] || [ ${IMAGICK_VERSION_PRIMARY_VERSION} = "7" ]; then \
+        mkdir -p /tmp/imagemagick && \
+        cd /tmp/imagemagick && \
+        # If we want the latest or the minor version is not specified
+        if [ ${IMAGEMAGICK_VERSION} = "latest" ] || [ ${IMAGEMAGICK_VERSION} = "7" ]; then \
+            curl -L -o ImageMagick.tar.gz https://download.imagemagick.org/ImageMagick/download/ImageMagick.tar.gz && \
+            tar xzvf ImageMagick.tar.gz && \
+            IMAGEMAGICK_CHECK_VERSION="7."; \
+        # Ok we want a specified version, must match a tag 7.x
+        else \
+            git clone --depth 1 --branch ${IMAGEMAGICK_VERSION} https://github.com/ImageMagick/ImageMagick.git && \
+            IMAGEMAGICK_CHECK_VERSION=`echo ${IMAGEMAGICK_VERSION}`; \
+        fi && \
+        cd * && \
+        ./configure && \
+        make && \
+        make install && \
+        ldconfig /usr/local/lib && \
+        cd && \
+        rm -rf /tmp/imagemagick && \
+        convert --version | grep -q "ImageMagick ${IMAGEMAGICK_CHECK_VERSION}"; \
+    # The version of imagemagick is not latest or greater than 7, we use the official repo which use the 6.x version
+    else \
+        apt-get install -y imagemagick && \
+        convert --version | grep -q "ImageMagick 6.9"; \
+    fi && \
+    # regardless of the version, we install also magickWand
+    apt-get install -y libmagickwand-dev && \
+    ####
+    # We install the imagick php extension
+    ####
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       apt-get install -y git && \
       cd /tmp && \
-      if [ ${IMAGEMAGICK_VERSION} = "latest" ]; then \
+      if [ ${IMAGICK_VERSION} = "latest" ]; then \
         git clone https://github.com/Imagick/imagick; \
       else \
-        git clone --branch ${IMAGEMAGICK_VERSION} https://github.com/Imagick/imagick; \
+        git clone --branch ${IMAGICK_VERSION} https://github.com/Imagick/imagick; \
       fi && \
       cd imagick && \
       phpize && \
